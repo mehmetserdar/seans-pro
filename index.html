@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#ffffff" id="themeColor">
+    <title>Seans Pro - Görev Yönetimi & Pomodoro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .task-item:hover .task-actions {
+            opacity: 1;
+        }
+
+        .completed-task {
+            position: relative;
+        }
+
+        .completed-task::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 50%;
+            width: 100%;
+            height: 2px;
+            background: #10B981;
+            transform: translateY(-50%);
+            opacity: 0.7;
+        }
+
+        .quick-delete-btn {
+            transition: all 0.2s;
+            opacity: 0;
+        }
+
+        .edit-task-btn {
+            transition: all 0.2s;
+            opacity: 0;
+        }
+
+
+        .task-item:hover .quick-delete-btn {
+            opacity: 1;
+        }
+
+        .task-item:hover .edit-task-btn {
+            opacity: 1;
+        }
+
+        .priority-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+
+        .pomodoro-progress {
+            transition: stroke-dashoffset 1s linear;
+        }
+
+        .pomodoro-tab {
+            transition: all 0.3s ease;
+        }
+
+        .pomodoro-tab.active {
+            background-color: #3B82F6;
+            color: white;
+        }
+
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-8">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-tasks text-3xl text-blue-500"></i>
+                <h1 class="text-2xl font-bold">Seans Pro</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="darkModeToggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                    <i class="fas fa-moon dark:hidden"></i>
+                    <i class="fas fa-sun hidden dark:block"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left Column - Tasks & Pomodoro -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Pomodoro Timer -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+                    <h2 class="text-xl font-semibold mb-4">Pomodoro Zamanlayıcısı</h2>
+                    <div class="flex flex-col items-center">
+                        <div class="relative w-64 h-64 mb-6">
+                            <svg class="w-full h-full" viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="45" fill="none" stroke="#E5E7EB" stroke-width="8" />
+                                <circle id="pomodoroProgress" class="pomodoro-progress" cx="50" cy="50" r="45"
+                                    fill="none" stroke="#3B82F6" stroke-width="8" stroke-dasharray="283"
+                                    stroke-dashoffset="0" transform="rotate(-90 50 50)" />
+                                <text id="pomodoroTime" x="50" y="55" text-anchor="middle" font-size="24"
+                                    font-weight="bold" fill="currentColor">25:00</text>
+                                <text id="pomodoroPhase" x="50" y="70" text-anchor="middle" font-size="12"
+                                    fill="currentColor">Çalışma</text>
+                            </svg>
+                        </div>
+
+                        <div class="flex space-x-2 mb-4">
+                            <button id="pomodoroWork" class="pomodoro-tab active px-4 py-2 rounded-lg">Çalışma
+                                (25dk)</button>
+                            <button id="pomodoroShortBreak" class="pomodoro-tab px-4 py-2 rounded-lg">Kısa Mola
+                                (5dk)</button>
+                            <button id="pomodoroLongBreak" class="pomodoro-tab px-4 py-2 rounded-lg">Uzun Mola
+                                (15dk)</button>
+                        </div>
+
+                        <div class="flex space-x-4">
+                            <button id="pomodoroStart"
+                                class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg flex items-center space-x-2">
+                                <i class="fas fa-play"></i>
+                                <span>Başlat</span>
+                            </button>
+                            <button id="pomodoroPause"
+                                class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg flex items-center space-x-2 hidden">
+                                <i class="fas fa-pause"></i>
+                                <span>Duraklat</span>
+                            </button>
+                            <button id="pomodoroReset"
+                                class="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg flex items-center space-x-2">
+                                <i class="fas fa-redo"></i>
+                                <span>Sıfırla</span>
+                            </button>
+                        </div>
+
+                        <div class="mt-4 text-sm text-gray-500 dark:text-gray-400">
+                            <span id="pomodoroCount">0</span> Pomodoro tamamlandı (Bugün)
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Task Form -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+                    <h2 class="text-xl font-semibold mb-4">Yeni Görev Ekle</h2>
+                    <form id="taskForm" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="taskTitle" class="block text-sm font-medium mb-1">Görev Başlığı*</label>
+                                <input type="text" id="taskTitle" required
+                                    class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                            </div>
+                            <div>
+                                <label for="taskCategory" class="block text-sm font-medium mb-1">Kategori</label>
+                                <select id="taskCategory"
+                                    class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                                    <option value="daily">Günlük</option>
+                                    <option value="revision">Tekrar</option>
+                                    <option value="work">İş</option>
+                                    <option value="personal">Kişisel</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label for="taskPriority" class="block text-sm font-medium mb-1">Öncelik</label>
+                                <select id="taskPriority"
+                                    class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                                    <option value="low">Düşük</option>
+                                    <option value="medium" selected>Orta</option>
+                                    <option value="high">Yüksek</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="taskStartDate" class="block text-sm font-medium mb-1">Başlangıç Tarihi</label>
+                                <input type="date" id="taskStartDate"
+                                    class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                            </div>
+                            <div>
+                                <label for="taskDueDate" class="block text-sm font-medium mb-1">Bitiş Tarihi</label>
+                                <input type="date" id="taskDueDate"
+                                    class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label for="taskPomodoros" class="block text-sm font-medium mb-1">Seans</label>
+                                <input type="number" id="taskPomodoros" min="1" max="10" value="1"
+                                    class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                            </div>
+                            <div>
+                                <label for="taskSessionRate" class="block text-sm font-medium mb-1">Seans Ücreti (₺)</label>
+                                <div class="flex">
+                                    <span class="inline-flex items-center px-3 text-gray-500 bg-gray-100 dark:bg-gray-700 dark:text-gray-400 border border-r-0 border-gray-300 dark:border-gray-600 rounded-l-lg">₺</span>
+                                    <input type="number" id="taskSessionRate" min="0" step="0.01" value="0"
+                                        class="w-full px-4 py-2 border rounded-r-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                                </div>
+                            </div>
+                            <div>
+                                <!-- Boş bırakıldı -->
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="taskDescription" class="block text-sm font-medium mb-1">Açıklama</label>
+                            <textarea id="taskDescription" rows="3"
+                                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600"></textarea>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <button type="submit"
+                                class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg flex items-center space-x-2">
+                                <i class="fas fa-plus"></i>
+                                <span>Görev Ekle</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Task Filters -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex space-x-2">
+                            <button class="filter-btn active px-4 py-2 rounded-lg bg-blue-500 text-white"
+                                data-filter="all">
+                                Tümü
+                            </button>
+                            <button
+                                class="filter-btn px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
+                                data-filter="daily">
+                                Günlük
+                            </button>
+                            <button
+                                class="filter-btn px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
+                                data-filter="revision">
+                                Tekrar
+                            </button>
+                            <button
+                                class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
+                                id="showCompleted">
+                                <i class="far fa-eye mr-2"></i>Tamamlananları Göster
+                            </button>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <label for="sortTasks" class="text-sm">Sırala:</label>
+                            <select id="sortTasks"
+                                class="px-3 py-1 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                                <option value="priority">Öncelik</option>
+                                <option value="startDate">Başlangıç Tarihi</option>
+                                <option value="dueDate">Bitiş Tarihi</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Task List -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
+                    <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                        <h2 class="text-xl font-semibold">Görevlerim</h2>
+                        <button id="clearCompleted"
+                            class="text-sm text-red-500 hover:text-red-700 dark:hover:text-red-400 flex items-center">
+                            <i class="fas fa-trash-alt mr-1"></i> Tamamlananları Sil
+                        </button>
+                    </div>
+                    <div id="taskList"
+                        class="divide-y divide-gray-200 dark:divide-gray-700 max-h-[500px] overflow-y-auto">
+                        <!-- Task items will be added here dynamically -->
+                        <div class="p-4 text-center text-gray-500 dark:text-gray-400">
+                            Henüz görev yok. İlk görevini ekle!
+                        </div>
+                    </div>
+                </div>
+
+
+            </div>
+
+            <!-- Right Column - Stats & Completed Tasks -->
+            <div class="space-y-6">
+
+                <!-- Stats -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+                    <h2 class="text-xl font-semibold mb-4">İstatistikler</h2>
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div class="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
+                            <div class="text-2xl font-bold text-blue-500" id="totalTasks">0</div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">Toplam Görevler</div>
+                        </div>
+                        <div class="bg-green-50 dark:bg-green-900/30 p-4 rounded-lg">
+                            <div class="text-2xl font-bold text-green-500" id="completedTasks">0</div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">Tamamlanan Görevler</div>
+                        </div>
+                    </div>
+                     <!-- Kazanç Bilgilerini Göster -->
+    <div class="grid grid-cols-2 gap-4 mb-6">
+        <div class="bg-yellow-50 dark:bg-yellow-900/30 p-4 rounded-lg">
+            <div class="text-l font-bold text-yellow-500" id="totalEarnings">₺0.00</div>
+            <div class="text-sm text-gray-500 dark:text-gray-400">Toplam Kazanç</div>
+        </div>
+        <div class="bg-purple-50 dark:bg-purple-900/30 p-4 rounded-lg">
+            <div class="text-l font-bold text-purple-500" id="todayEarnings">₺0.00</div>
+            <div class="text-sm text-gray-500 dark:text-gray-400">Bugünkü Kazanç</div>
+        </div>
+    </div>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span>İlerleme:</span>
+                            <span class="font-medium" id="progressPercent">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                            <div class="bg-blue-500 h-2.5 rounded-full" id="progressBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pomodoro Focus Task -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+                    <h2 class="text-xl font-semibold mb-4">Odaklanılacak Görev</h2>
+                    <div id="focusTaskContainer" class="text-center py-8">
+                        <p class="text-gray-500 dark:text-gray-400 mb-4">Henüz bir görev seçilmedi</p>
+                        <button id="selectFocusTask"
+                            class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
+                            Görev Seç
+                        </button>
+                    </div>
+                    <div id="focusTaskDetails" class="hidden">
+                        <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg mb-4">
+                            <h3 id="focusTaskTitle" class="font-bold text-lg"></h3>
+                            <div class="flex justify-between items-center mt-2">
+                                <span id="focusTaskPomodoros"
+                                    class="text-sm bg-blue-100 dark:bg-blue-900/30 px-2 py-1 rounded-full"></span>
+                                <div class="flex space-x-2">
+                                    <button id="completePomodoro"
+                                        class="text-xs bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded">
+                                        +1 Seans
+                                    </button>
+                                    <button id="completeFocusTask"
+                                        class="text-xs bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded">
+                                        Tamamla
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex justify-center">
+                            <button id="changeFocusTask"
+                                class="text-blue-500 hover:text-blue-700 dark:hover:text-blue-400 text-sm">
+                                Görevi Değiştir
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+
+                <!-- HTML'inizin uygun bir yerine aşağıdaki kodu ekleyin -->
+
+                <!-- Pomodoro Ayarları -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+                    <h2 class="text-xl font-semibold mb-4">Pomodoro Ayarları</h2>
+                    <form id="settingsForm" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="settingWorkDuration" class="block text-sm font-medium mb-1">Çalışma Süresi
+                                    (dk)</label>
+                                <input type="number" id="settingWorkDuration" min="1" max="60"
+                                    class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                            </div>
+                            <div>
+                                <label for="settingShortBreak" class="block text-sm font-medium mb-1">Kısa Mola
+                                    (dk)</label>
+                                <input type="number" id="settingShortBreak" min="1" max="30"
+                                    class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="settingLongBreak" class="block text-sm font-medium mb-6">Uzun Mola
+                                    (dk)</label>
+                                <input type="number" id="settingLongBreak" min="5" max="60"
+                                    class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                            </div>
+                            <div>
+                                <label for="settingPomodorosCount" class="block text-sm font-medium mb-1">Uzun Mola
+                                    Öncesi Pomodoro</label>
+                                <input type="number" id="settingPomodorosCount" min="1" max="10"
+                                    class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                            </div>
+                        </div>
+                        <div class="flex justify-end">
+                            <button type="submit"
+                                class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2">
+                                <i class="fas fa-save"></i>
+                                <span>Ayarları Kaydet</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+                    <h2 class="text-xl font-semibold mb-4">Hızlı Eylemler</h2>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button id="completeAll"
+                            class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center justify-center space-x-2">
+                            <i class="fas fa-check-double"></i>
+                            <span>Tümünü Tamamla</span>
+                        </button>
+                        <button id="deleteAll"
+                            class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex items-center justify-center space-x-2">
+                            <i class="fas fa-trash-alt"></i>
+                            <span>Tümünü Sil</span>
+                        </button>
+                    </div>
+                </div>
+                <!-- Completed Tasks (hidden by default) -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden hidden"
+                    id="completedTasksContainer">
+                    <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                        <h2 class="text-xl font-semibold">Tamamlanan Görevler</h2>
+                        <button id="clearAllCompleted"
+                            class="text-sm text-red-500 hover:text-red-700 dark:hover:text-red-400 flex items-center">
+                            <i class="fas fa-trash-alt mr-1"></i> Tümünü Sil
+                        </button>
+                    </div>
+                    <div id="completedTaskList"
+                        class="divide-y divide-gray-200 dark:divide-gray-700 max-h-[300px] overflow-y-auto">
+                        <!-- Completed tasks will be added here dynamically -->
+                        <div class="p-4 text-center text-gray-500 dark:text-gray-400">
+                            Henüz tamamlanmış görev yok
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Area -->
+    <div id="notificationArea" class="fixed bottom-4 right-4 space-y-2 w-80 z-50"></div>
+
+    <!-- Task Düzenleme Modalı -->
+    <div id="taskEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold">Görevi Düzenle</h3>
+                <button id="closeEditModal" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="editTaskForm" class="space-y-4">
+                <input type="hidden" id="editTaskId">
+                <div>
+                    <label for="editTaskTitle" class="block text-sm font-medium mb-1">Görev Başlığı*</label>
+                    <input type="text" id="editTaskTitle" required
+                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                </div>
+                <div>
+                    <label for="editTaskCategory" class="block text-sm font-medium mb-1">Kategori</label>
+                    <select id="editTaskCategory"
+                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                        <option value="daily">Günlük</option>
+                        <option value="revision">Tekrar</option>
+                        <option value="work">İş</option>
+                        <option value="personal">Kişisel</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="editTaskPriority" class="block text-sm font-medium mb-1">Öncelik</label>
+                    <select id="editTaskPriority"
+                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                        <option value="low">Düşük</option>
+                        <option value="medium">Orta</option>
+                        <option value="high">Yüksek</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="editTaskStartDate" class="block text-sm font-medium mb-1">Başlangıç Tarihi</label>
+                    <input type="date" id="editTaskStartDate"
+                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                </div>
+                <div>
+                    <label for="editTaskDueDate" class="block text-sm font-medium mb-1">Bitiş Tarihi</label>
+                    <input type="date" id="editTaskDueDate"
+                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                </div>
+                <div>
+                    <label for="editTaskPomodoros" class="block text-sm font-medium mb-1">Seans</label>
+                    <input type="number" id="editTaskPomodoros" min="1" max="10"
+                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                </div>
+                <div>
+                    <label for="editTaskSessionRate" class="block text-sm font-medium mb-1">Seans Ücreti (₺)</label>
+                    <div class="flex">
+                        <span class="inline-flex items-center px-3 text-gray-500 bg-gray-100 dark:bg-gray-700 dark:text-gray-400 border border-r-0 border-gray-300 dark:border-gray-600 rounded-l-lg">₺</span>
+                        <input type="number" id="editTaskSessionRate" min="0" step="0.01" value="0"
+                            class="w-full px-4 py-2 border rounded-r-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                    </div>
+                </div>
+                <div>
+                    <label for="editTaskDescription" class="block text-sm font-medium mb-1">Açıklama</label>
+                    <textarea id="editTaskDescription" rows="3"
+                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600"></textarea>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" id="cancelEditTask"
+                        class="bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-800 dark:text-white px-4 py-2 rounded-lg">
+                        İptal
+                    </button>
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
+                        Değişiklikleri Kaydet
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- Task Selection Modal -->
+    <div id="taskSelectionModal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold">Bir Görev Seçin</h3>
+                <button id="closeTaskModal" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="availableTasksList" class="space-y-2">
+                <!-- Tasks will be added here dynamically -->
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+
+</html>
